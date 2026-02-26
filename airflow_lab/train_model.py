@@ -71,6 +71,10 @@ def train_model(**kwargs):
         mlflow.log_metric("rmse", rmse)
         mlflow.log_metric("r2", r2)
         mlflow.log_metric("mae", mae)
+
+        # Сохранение артефактов в MLFlow.
+        signature = infer_signature(X_train, best.predict(X_train))
+        mlflow.sklearn.log_model(best, "model", signature=signature)
         
         with open(MODEL_FILE, "wb") as file:
             joblib.dump(best, file)

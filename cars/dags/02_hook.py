@@ -1,3 +1,4 @@
+import pandas as pd
 from datetime import datetime
 import json
 import logging
@@ -71,6 +72,42 @@ def _fetch_cars(conn_id: str, templates_dict: dict, batch_size: int = 1000, **_)
     logger.info(f"Saved cars to {output_path}")
 
 
+def clean_cars_data(**kwargs):
+    raw_file_path = '/data/custom_hook/cars.json'
+    cleaned_file_path = '/data/cleaned/cars_cleaned.json'
+
+    print(f"Loading raw data from {raw_file_path}")
+
+    if not os.path.exists(raw_file_path):
+        raise FileNotFoundError(
+            f"File {raw_file_path} not found")
+
+    df = pd.read_json(raw_file_path)
+    print(f"Initial data size: {df.shape}")
+
+    df = df.drop_duplicates()
+    print(f"Data size after dropping duplicates: {df.shape}")
+
+    df = df.dropna()
+    print(f"Data size after dropping nulls: {df.shape}")
+
+    # Cat encoding.
+    if 'Fuel_type' in df.columns:
+        df['Fuel_type_code'] = pd.factorize(df['Fuel_type'])[0]
+        df = df.drop(columns=['Fuel_type'])
+
+    if 'Transmission' in df.columns:
+        df['Transmission_code'] = pd.factorize(df['Transmission'])[0]
+        df = df.drop(columns=['Transmission'])
+
+    print("Categorial features transformed")
+
+    os.makedirs(os.path.dirname(cleaned_file_path), exist_ok=True)
+
+    df.to_json(cleaned_file_path, orient='records', indent=4)
+    print(f"Cleaned data saved to {cleaned_file_path}")
+
+
 with DAG(
     dag_id="02_hook",
     description="Fetches car data from the custom API using a custom hook.",
@@ -80,7 +117,7 @@ with DAG(
     max_active_runs=1,
 ) as dag:
 
-    PythonOperator(
+    fetch_cars_task = PythonOperator(
         task_id="fetch_cars",
         python_callable=_fetch_cars,
         op_kwargs={"conn_id": "carsapi"},  # ← имя Airflow Connection
@@ -88,3 +125,9 @@ with DAG(
             "output_path": "/data/custom_hook/cars.json",
         },
     )
+    clean_cars_task = PythonOperator(
+        task_id="clean_cars_data",
+        python_callable=clean_cars_data,
+    )
+
+    fetch_cars_task >> clean_cars_task

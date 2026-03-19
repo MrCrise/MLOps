@@ -8,7 +8,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
 
-# Параметры подключения к вашему API
+# Параметры подключения к API
 MOVIELENS_HOST = os.environ.get("MOVIELENS_HOST", "carsapi")
 MOVIELENS_SCHEMA = os.environ.get("MOVIELENS_SCHEMA", "http")
 MOVIELENS_PORT = os.environ.get("MOVIELENS_PORT", "8081")
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_session():
-    """Создаёт сессию для запросов к вашему Car API."""
+    """Создаёт сессию для запросов к Car API."""
     session = requests.Session()
     session.auth = (MOVIELENS_USER, MOVIELENS_PASSWORD)
     base_url = f"{MOVIELENS_SCHEMA}://{MOVIELENS_HOST}:{MOVIELENS_PORT}"
@@ -82,7 +82,6 @@ def analyze_cars(**context):
         logger.warning("No car data to analyze.")
         return
 
-    # Пример анализа: средняя цена по году
     summary = df.groupby("Year")["Priceeuro"].agg(
         mean_price="mean",
         count="count",
@@ -99,8 +98,8 @@ def analyze_cars(**context):
 with DAG(
     dag_id="01_cars",
     description="Fetches car data from the custom API and analyzes it.",
-    start_date=datetime(2026, 2, 3),  # сегодняшняя дата (ваш контекст)
-    schedule="@daily",               # можно оставить daily или сделать @once
+    start_date=datetime(2026, 2, 3),
+    schedule="@daily",
     catchup=False,
     max_active_runs=1,
 ) as dag:

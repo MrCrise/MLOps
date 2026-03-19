@@ -92,13 +92,10 @@ def clean_cars_data(**kwargs):
     print(f"Data size after dropping nulls: {df.shape}")
 
     # Cat encoding.
-    if 'Fuel_type' in df.columns:
-        df['Fuel_type_code'] = pd.factorize(df['Fuel_type'])[0]
-        df = df.drop(columns=['Fuel_type'])
+    cat_columns = df.select_dtypes(include=['object']).columns
 
-    if 'Transmission' in df.columns:
-        df['Transmission_code'] = pd.factorize(df['Transmission'])[0]
-        df = df.drop(columns=['Transmission'])
+    for col in cat_columns:
+        df[col] = pd.factorize(df[col])[0]
 
     print("Categorial features transformed")
 
